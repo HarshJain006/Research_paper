@@ -96,11 +96,12 @@ cp .env.example .env
 # server (e.g. llama.cpp / Ollama / LM Studio) via the "custom provider"
 # fields in the UI for something like Gemma 3 1B
 # optionally: TAVILY_API_KEY (better web search) and/or MCP_SERVER_URL
-uvicorn main:app --reload --port 8000
+uvicorn backend:app --reload --port 8000
 ```
 
-Open `index.html` directly in a browser (or serve it statically) and point
-"Backend URL" at `http://localhost:8000`.
+To run the Streamlit frontend locally, open a second terminal and run
+`streamlit run main.py`. Alternatively, open `index.html` directly in a
+browser and point "Backend URL" at `http://localhost:8000`.
 
 Nothing external is required to get *some* research signal — Semantic
 Scholar and arXiv need no API key, and the DuckDuckGo web-search fallback
@@ -113,19 +114,20 @@ backend must also be deployed to a public Python host; Streamlit Community
 Cloud does not expose this project's FastAPI service. The browser calls that
 backend directly, including its streaming analysis and chat endpoints.
 
-1. Deploy this folder's `main.py` as a FastAPI web service. Install
+1. Deploy this folder's `backend.py` as a FastAPI web service. Install
    `requirements.txt` and start it with:
 
    ```bash
-   uvicorn main:app --host 0.0.0.0 --port $PORT
+   uvicorn backend:app --host 0.0.0.0 --port $PORT
    ```
 
    Set `GROQ_API_KEY` in the backend service's environment. Optionally set
    `TAVILY_API_KEY`, `MCP_SERVER_URL`, and `MCP_SEARCH_TOOL_NAME` there too.
 2. Push this project folder to GitHub.
 3. In Streamlit Community Cloud, create an app from that repository and set
-   **Main file path** to `streamlit_app.py` (or its path relative to the
-   repository root).
+   **Main file path** to `main.py` (or its path relative to the repository
+   root). This matches the `main.py` entry point already selected in the
+   deployment logs.
 4. In the Streamlit app's **Settings → Secrets**, set the URL of the deployed
    FastAPI service:
 
@@ -143,8 +145,9 @@ it publicly, to prevent unauthorized use of its configured model API key.
 
 ## Files
 
-- `streamlit_app.py` — Streamlit Cloud entry point that embeds the frontend.
-- `main.py` — FastAPI app: PDF ingestion, figure extraction, the two SSE
+- `main.py` — Streamlit Cloud entry point that displays the existing frontend.
+- `streamlit_app.py` — shared Streamlit renderer for the frontend.
+- `backend.py` — FastAPI app: PDF ingestion, figure extraction, the two SSE
   endpoints (`/api/analyze`, `/api/chat/stream`), plus a plain `/api/chat`.
 - `agents.py` — the multi-agent orchestrator (Planner, Research, 6 Section
   Writers, Assembler) and every system prompt.
