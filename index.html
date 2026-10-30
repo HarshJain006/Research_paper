@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Marginal — AI Research Paper Explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/contrib/auto-render.min.js"></script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.js';
+  mermaid.initialize({ startOnLoad:false, theme:'neutral', securityLevel:'strict', fontFamily:'Inter, sans-serif' });
+  window.__mermaid = mermaid;
+</script>
+<style>
+  :root{
+    --paper:      #FAF8F3;
+    --paper-card: #FFFFFF;
+    --ink:        #23241F;
+    --ink-soft:   #6B6455;
+    --rule:       #DFD8C6;
+    --accent:     #2C4A6E;   /* citation blue */
+    --accent-soft:#EAF0F5;
+    --highlight:  #E7A93C;   /* marginalia highlighter */
+    --highlight-soft:#FBF0DA;
+    --good:       #4C7A5B;
+    --bad:        #B34A3C;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    line-height:1.55;
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px);
+    background-size: 100% 42px;
+    background-position: 0 128px;
+  }
+  a{color:var(--accent);}
+
+  /* ---------- Header ---------- */
+  header{
+    padding:34px 40px 22px;
+    border-bottom:1px solid var(--rule);
+    background:var(--paper);
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  .brand{display:flex; align-items:baseline; gap:14px;}
+  .brand .mark{
+    font-family:'Source Serif 4',serif;
+    font-weight:700;
+    font-size:30px;
+    letter-spacing:-0.01em;
+  }
+  .brand .mark em{
+    font-style:normal;
+    color:var(--highlight);
+    background:linear-gradient(transparent 62%, var(--highlight-soft) 0%);
+  }
+  .brand .tagline{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    letter-spacing:.02em;
+  }
+  .status-pill{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    padding:5px 10px;
+    border:1px solid var(--rule);
+    border-radius:20px;
+    color:var(--ink-soft);
+    background:var(--paper-card);
+  }
+
+  main{
+    max-width:1180px;
+    margin:0 auto;
+    padding:34px 40px 90px;
+    display:grid;
+    grid-template-columns: 340px 1fr;
+    gap:34px;
+    align-items:start;
+  }
+  @media (max-width: 920px){
+    main{grid-template-columns:1fr;}
+  }
+
+  /* ---------- Control column ---------- */
+  .panel{
+    background:var(--paper-card);
+    border:1px solid var(--rule);
+    border-radius:var(--radius);
+    padding:20px;
+  }
+  .panel + .panel{margin-top:18px;}
+  .panel h2{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+  }
+
+  .tabs{display:flex; gap:2px; margin-bottom:14px; border:1px solid var(--rule); border-radius:var(--radius); overflow:hidden;}
+  .tab{
+    flex:1; text-align:center; padding:9px 6px; cursor:pointer;
+    font-size:13px; font-weight:500; color:var(--ink-soft);
+    background:var(--paper); user-select:none;
+  }
+  .tab.active{background:var(--accent); color:#fff;}
+
+  .dropzone{
+    border:1.5px dashed var(--rule);
+    border-radius:var(--radius);
+    padding:26px 14px;
+    text-align:center;
+    cursor:pointer;
+    color:var(--ink-soft);
+    font-size:13px;
+    transition:border-color .15s, background .15s;
+  }
+  .dropzone.drag{border-color:var(--accent); background:var(--accent-soft); color:var(--accent);}
+  .dropzone strong{display:block; color:var(--ink); margin-bottom:4px; font-size:13.5px;}
+  .file-chip{
+    margin-top:10px; font-size:12.5px; font-family:'IBM Plex Mono',monospace;
+    background:var(--highlight-soft); border:1px solid var(--highlight);
+    padding:6px 9px; border-radius:var(--radius); display:none;
+    align-items:center; justify-content:space-between; gap:8px;
+  }
+  .file-chip button{background:none;border:none;cursor:pointer;color:var(--bad);font-size:14px;}
+
+  input[type=text], input[type=password], select{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--rule);
+    border-radius:var(--radius);
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    background:#fff;
+    color:var(--ink);
+  }
+  input:focus, select:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  label{
+    display:block; font-size:12px; color:var(--ink-soft); margin:12px 0 5px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  label:first-child{margin-top:0;}
+  .hint{font-size:11.5px; color:var(--ink-soft); margin-top:5px; line-height:1.4;}
+
+  .provider-toggle{display:flex; gap:8px;}
+  .provider-toggle label.chip{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--rule); border-radius:var(--radius);
+    padding:8px 6px; font-size:12.5px; cursor:pointer; margin:0;
+    font-family:'Inter',sans-serif; color:var(--ink-soft);
+  }
+  .provider-toggle input{display:none;}
+  .provider-toggle input:checked + span{color:var(--accent); font-weight:600;}
+  .provider-toggle label.chip:has(input:checked){border-color:var(--accent); background:var(--accent-soft);}
+
+  .checkbox-row{display:flex; align-items:center; gap:8px; margin-top:14px; font-size:13px; color:var(--ink-soft);}
+
+  .analyze-btn{
+    width:100%; margin-top:18px; padding:12px;
+    background:var(--accent); color:#fff; border:none; border-radius:var(--radius);
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14px; cursor:pointer;
+    letter-spacing:.01em;
+  }
+  .analyze-btn:disabled{background:#B8C2CC; cursor:not-allowed;}
+  .analyze-btn:hover:not(:disabled){background:#233b57;}
+
+  details.settings summary{
+    cursor:pointer; font-size:12.5px; color:var(--accent); list-style:none;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  details.settings summary::-webkit-details-marker{display:none;}
+  details.settings summary:before{content:"▸ "; }
+  details.settings[open] summary:before{content:"▾ "; }
+  details.settings{margin-top:16px; border-top:1px dashed var(--rule); padding-top:12px;}
+
+  .error-box{
+    margin-top:14px; padding:10px 12px; border-radius:var(--radius);
+    background:#FBEBE8; border:1px solid var(--bad); color:var(--bad); font-size:13px;
+  }
+
+  /* ---------- Manuscript / output column ---------- */
+  .manuscript-wrap{position:relative;}
+  .empty-state{
+    background:var(--paper-card); border:1px solid var(--rule); border-radius:var(--radius);
+    padding:70px 40px; text-align:center; color:var(--ink-soft);
+  }
+  .empty-state .mark{font-family:'Source Serif 4',serif; font-size:20px; color:var(--ink); margin-bottom:8px;}
+
+  .loading{
+    background:var(--paper-card); border:1px solid var(--rule); border-radius:var(--radius);
+    padding:22px 24px 26px;
+  }
+  .live-status{
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);
+    display:flex; align-items:center; gap:9px; margin-bottom:16px; padding-bottom:14px; border-bottom:1px dashed var(--rule);
+  }
+  .live-status::before{
+    content:''; width:9px; height:9px; border-radius:50%; background:var(--accent); flex:none;
+    animation:pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .live-sections{display:flex; flex-direction:column; gap:12px;}
+  .live-section{
+    border:1px solid var(--rule); border-radius:var(--radius); background:#fff;
+    padding:11px 15px; opacity:.55; transition:opacity .2s, border-color .2s;
+  }
+  .live-section.active{opacity:1; border-color:var(--accent);}
+  .live-section.done{opacity:.9;}
+  .live-section-head{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); letter-spacing:.02em;
+  }
+  .live-section-head .dot{width:7px; height:7px; border-radius:50%; background:#c9c2b4; flex:none;}
+  .live-section.active .live-section-head .dot{background:var(--accent); animation:pulse 1s ease-in-out infinite;}
+  .live-section.done .live-section-head .dot{background:#5c8a5c;}
+  .live-section-body{
+    font-family:'Inter',sans-serif; font-size:12.5px; line-height:1.55; color:var(--ink);
+    white-space:pre-wrap; max-height:190px; overflow-y:auto;
+  }
+  .live-section-body:empty::before{content:'waiting…'; color:var(--ink-soft); font-style:italic;}
+
+  .meta-strip{
+    display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;
+  }
+  .meta-strip span{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft);
+    background:var(--paper-card); border:1px solid var(--rule); padding:4px 9px; border-radius:20px;
+  }
+
+  .report{
+    background:var(--paper-card);
+    border:1px solid var(--rule);
+    border-radius:var(--radius);
+    padding:44px 48px;
+    font-family:'Source Serif 4',serif;
+  }
+  @media (max-width: 640px){ .report{padding:26px 20px;} }
+
+  .report h2{
+    font-family:'Source Serif 4',serif;
+    font-size:19px;
+    font-weight:700;
+    margin:34px 0 12px;
+    padding-bottom:8px;
+    border-bottom:2px solid var(--ink);
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .report h2:first-child{margin-top:0;}
+  .report .sec-num{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    font-weight:500;
+    color:#fff;
+    background:var(--accent);
+    padding:2px 7px;
+    border-radius:20px;
+    flex-shrink:0;
+  }
+  .report h3{font-family:'Inter',sans-serif; font-size:13px; color:var(--accent); margin:16px 0 6px;}
+  .report p{font-family:'Inter',sans-serif; font-size:14.5px; margin:8px 0;}
+  .report ul, .report ol{font-family:'Inter',sans-serif; font-size:14.5px; padding-left:20px; margin:8px 0;}
+  .report li{margin:4px 0;}
+  .report li::marker{color:var(--highlight);}
+  .report strong{color:var(--ink);}
+  .report code{
+    font-family:'IBM Plex Mono',monospace; background:var(--accent-soft); padding:1px 5px; border-radius:3px; font-size:.9em;
+  }
+  .report em{color:var(--ink-soft);}
+  .report .katex-display{overflow-x:auto; overflow-y:hidden; margin:10px 0;}
+  .report .katex{font-size:1.05em;}
+  .chat-msg .katex-display{overflow-x:auto; overflow-y:hidden;}
+  .report figure, .report p:has(> img){
+    margin:16px 0 4px;
+  }
+  .report img{
+    max-width:100%; border:1px solid var(--rule); border-radius:var(--radius); display:block; margin:0 auto;
+  }
+  .report p:has(> img) + p em, .report p em:only-child{
+    display:block; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+    color:var(--ink-soft); margin:6px 0 20px;
+  }
+  .report hr{border:none; border-top:1px dashed var(--rule); margin:22px 0;}
+
+  /* ---------- Figure appendix ---------- */
+  .fig-appendix{margin-top:22px;}
+  .fig-appendix h3{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; text-transform:uppercase;
+    letter-spacing:.08em; color:var(--ink-soft); margin-bottom:14px;
+  }
+  .fig-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px;
+  }
+  .fig-card{
+    background:var(--paper-card); border:1px solid var(--rule); border-radius:var(--radius); overflow:hidden;
+  }
+  .fig-card img{width:100%; display:block; border-bottom:1px solid var(--rule); background:#f5f3ee;}
+  .fig-card .fig-body{padding:10px 12px;}
+  .fig-card .fig-label{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--highlight); margin-bottom:4px; font-weight:500;
+  }
+  .fig-card .fig-desc{font-size:12.5px; color:var(--ink-soft); line-height:1.4;}
+
+  footer{
+    text-align:center; padding:26px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft);
+  }
+
+  /* ---------- Highlighted agentic sections ---------- */
+  .report h2.hl-ideas{
+    border-bottom-color:var(--highlight); background:var(--highlight-soft);
+    margin-left:-16px; margin-right:-16px; padding:14px 16px 12px; border-radius:var(--radius) var(--radius) 0 0;
+  }
+  .report h2.hl-ideas .sec-num{background:var(--highlight); color:var(--ink);}
+  .report h2.hl-ideas::before{content:"💡 "; }
+  .report h2.hl-related::before{content:"🔎 "; }
+  .report h2.hl-sources::before{content:"📚 "; }
+  .report .novelty-callout{
+    background:var(--accent-soft); border-left:3px solid var(--accent); padding:10px 14px; border-radius:0 var(--radius) var(--radius) 0; margin:10px 0;
+  }
+
+  /* ---------- Mermaid diagrams ---------- */
+  .mermaid-wrap{
+    background:#fff; border:1px solid var(--rule); border-radius:var(--radius);
+    padding:18px; margin:16px 0; overflow-x:auto; text-align:center;
+  }
+  .mermaid-wrap svg{max-width:100%;}
+  .mermaid-caption{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); text-align:center; margin-top:-8px; margin-bottom:16px;
+  }
+
+  /* ---------- Chat sidebar (RAG Q&A over the paper) ---------- */
+  .chat-fab{
+    position:fixed; right:26px; bottom:26px; z-index:40;
+    background:var(--accent); color:#fff; border:none; border-radius:24px;
+    padding:13px 20px; font-family:'Inter',sans-serif; font-weight:600; font-size:13.5px;
+    box-shadow:0 4px 14px rgba(44,74,110,.35); cursor:pointer; display:flex; align-items:center; gap:8px;
+  }
+  .chat-fab:hover{background:#233b57;}
+  .chat-fab[disabled]{background:#B8C2CC; cursor:not-allowed; box-shadow:none;}
+  .chat-overlay{
+    position:fixed; inset:0; background:rgba(35,36,31,.28); z-index:49; display:none;
+  }
+  .chat-overlay.open{display:block;}
+  .chat-sidebar{
+    position:fixed; top:0; right:-420px; width:400px; max-width:92vw; height:100vh; z-index:50;
+    background:var(--paper-card); border-left:1px solid var(--rule); box-shadow:-8px 0 24px rgba(0,0,0,.12);
+    display:flex; flex-direction:column; transition:right .22s ease;
+  }
+  .chat-sidebar.open{right:0;}
+  .chat-header{
+    padding:18px 18px 14px; border-bottom:1px solid var(--rule); display:flex; align-items:center; justify-content:space-between;
+  }
+  .chat-header .title{font-family:'Source Serif 4',serif; font-weight:700; font-size:16px;}
+  .chat-header .sub{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-soft); margin-top:2px;}
+  .chat-close{background:none; border:none; font-size:16px; cursor:pointer; color:var(--ink-soft);}
+  .chat-log{flex:1; overflow-y:auto; padding:16px 18px; display:flex; flex-direction:column; gap:14px;}
+  .chat-msg{font-family:'Inter',sans-serif; font-size:13.5px; line-height:1.5;}
+  .chat-msg.user{align-self:flex-end; background:var(--accent); color:#fff; padding:9px 13px; border-radius:12px 12px 2px 12px; max-width:85%;}
+  .chat-msg.assistant{align-self:flex-start; background:var(--paper); border:1px solid var(--rule); padding:9px 13px; border-radius:12px 12px 12px 2px; max-width:92%;}
+  .chat-msg.assistant p{margin:4px 0;}
+  .chat-msg.assistant ul{margin:4px 0; padding-left:18px;}
+  .chat-msg.pending{color:var(--ink-soft); font-style:italic;}
+  .chat-empty{color:var(--ink-soft); font-size:12.5px; text-align:center; margin-top:30px; font-family:'IBM Plex Mono',monospace;}
+  .chat-input-row{border-top:1px solid var(--rule); padding:12px 14px; display:flex; gap:8px;}
+  .chat-input-row textarea{
+    flex:1; resize:none; border:1px solid var(--rule); border-radius:var(--radius); padding:9px 10px;
+    font-family:'Inter',sans-serif; font-size:13px; height:40px;
+  }
+  .chat-input-row button{
+    background:var(--accent); color:#fff; border:none; border-radius:var(--radius); padding:0 16px;
+    font-weight:600; cursor:pointer; font-size:13px;
+  }
+  .chat-input-row button:disabled{background:#B8C2CC; cursor:not-allowed;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark">Margin<em>al</em></span>
+    <span class="tagline">read the paper by its margins — not just its abstract</span>
+  </div>
+  <span class="status-pill" id="statusPill">backend: checking…</span>
+</header>
+
+<main>
+  <!-- ============ CONTROL COLUMN ============ -->
+  <div class="control-column">
+    <div class="panel">
+      <h2>Source</h2>
+      <div class="tabs">
+        <div class="tab active" data-tab="file">Upload PDF</div>
+        <div class="tab" data-tab="url">Paper URL</div>
+      </div>
+
+      <div id="tabFile">
+        <div class="dropzone" id="dropzone">
+          <strong>Drop a PDF here</strong>
+          or click to browse
+        </div>
+        <input type="file" id="fileInput" accept="application/pdf" style="display:none" />
+        <div class="file-chip" id="fileChip">
+          <span id="fileChipName"></span>
+          <button id="fileChipRemove" title="remove">✕</button>
+        </div>
+      </div>
+
+      <div id="tabUrl" style="display:none">
+        <label for="urlInput">Paper URL</label>
+        <input type="text" id="urlInput" placeholder="https://huggingface.co/papers/2606.28322" />
+        <p class="hint">Works with arXiv abstract/PDF links, huggingface.co/papers/&lt;id&gt;, or any direct .pdf URL.</p>
+      </div>
+
+      <label class="checkbox-row" style="margin-top:16px;">
+        <input type="checkbox" id="extractImages" checked />
+        Extract &amp; explain figures / graphs
+      </label>
+
+      <div class="error-box" id="errorBox" style="display:none"></div>
+
+      <button class="analyze-btn" id="analyzeBtn">Analyze Paper</button>
+    </div>
+
+    <div class="panel">
+      <h2>Model Settings</h2>
+
+      <label>LLM Provider</label>
+      <div class="provider-toggle">
+        <label class="chip"><input type="radio" name="provider" value="groq" checked /><span>Groq</span></label>
+        <label class="chip"><input type="radio" name="provider" value="custom" /><span>My hosted model</span></label>
+      </div>
+
+      <div id="groqFields">
+        <label for="groqKey">Groq API Key</label>
+        <input type="password" id="groqKey" placeholder="gsk_..." />
+        <p class="hint">For deployment, set GROQ_API_KEY on the backend. You can also enter a key here; it is stored in this browser and sent to your backend. Get a free key at console.groq.com/keys.</p>
+
+        <details class="settings">
+          <summary>Model names (advanced)</summary>
+          <label for="groqTextModel">Text model</label>
+          <input type="text" id="groqTextModel" placeholder="llama-3.3-70b-versatile" />
+          <label for="groqVisionModel">Vision model (figures)</label>
+          <input type="text" id="groqVisionModel" placeholder="meta-llama/llama-4-scout-17b-16e-instruct" />
+        </details>
+      </div>
+
+      <div id="customFields" style="display:none">
+        <label for="customBaseUrl">Base URL (OpenAI-compatible)</label>
+        <input type="text" id="customBaseUrl" placeholder="http://localhost:11434/v1" />
+        <label for="customApiKey">API Key (if required)</label>
+        <input type="password" id="customApiKey" placeholder="optional" />
+        <label for="customTextModel">Text model</label>
+        <input type="text" id="customTextModel" placeholder="e.g. llama3.1:70b" />
+        <label for="customVisionModel">Vision model (optional, for figures)</label>
+        <input type="text" id="customVisionModel" placeholder="optional" />
+      </div>
+
+      <details class="settings">
+        <summary>Backend URL</summary>
+        <input type="text" id="backendUrl" value="http://localhost:8000" />
+        <p class="hint">URL of the deployed FastAPI backend. On Streamlit Cloud, set BACKEND_URL in app Secrets.</p>
+      </details>
+    </div>
+  </div>
+
+  <!-- ============ OUTPUT COLUMN ============ -->
+  <div class="manuscript-wrap">
+    <div id="emptyState" class="empty-state">
+      <div class="mark">No paper analyzed yet</div>
+      <div>Upload a PDF or paste a paper URL, then hit “Analyze Paper.”</div>
+    </div>
+
+    <div id="loadingState" class="loading" style="display:none">
+      <p id="liveStatus" class="live-status">Starting…</p>
+      <div id="liveSections" class="live-sections"></div>
+    </div>
+
+    <div id="resultState" style="display:none">
+      <div class="meta-strip" id="metaStrip"></div>
+      <div class="report" id="reportOutput"></div>
+      <div class="fig-appendix" id="figAppendix"></div>
+    </div>
+  </div>
+</main>
+
+<footer>Marginal — runs entirely against your own backend. No paper data is stored server-side.</footer>
+
+<!-- ============ RAG CHAT SIDEBAR ============ -->
+<button class="chat-fab" id="chatFab" disabled title="Analyze a paper first">💬 Ask this paper</button>
+<div class="chat-overlay" id="chatOverlay"></div>
+<div class="chat-sidebar" id="chatSidebar">
+  <div class="chat-header">
+    <div>
+      <div class="title">Ask this paper</div>
+      <div class="sub" id="chatSub">no paper loaded</div>
+    </div>
+    <button class="chat-close" id="chatClose">✕</button>
+  </div>
+  <div class="chat-log" id="chatLog">
+    <div class="chat-empty" id="chatEmptyHint">Ask anything about the paper — definitions, specific numbers, "why did they choose X", etc. Answers are grounded only in this paper's text (RAG), not general knowledge.</div>
+  </div>
+  <div class="chat-input-row">
+    <textarea id="chatInput" placeholder="Ask a question about the paper…"></textarea>
+    <button id="chatSend">Send</button>
+  </div>
+</div>
+
+<script>
+marked.use({ breaks: false });
+
+// ---------- Elements ----------
+const tabs = document.querySelectorAll('.tab');
+const tabFile = document.getElementById('tabFile');
+const tabUrl = document.getElementById('tabUrl');
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const fileChip = document.getElementById('fileChip');
+const fileChipName = document.getElementById('fileChipName');
+const fileChipRemove = document.getElementById('fileChipRemove');
+const urlInput = document.getElementById('urlInput');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const errorBox = document.getElementById('errorBox');
+const statusPill = document.getElementById('statusPill');
+
+const emptyState = document.getElementById('emptyState');
+const loadingState = document.getElementById('loadingState');
+const liveStatus = document.getElementById('liveStatus');
+const liveSections = document.getElementById('liveSections');
+const resultState = document.getElementById('resultState');
+const metaStrip = document.getElementById('metaStrip');
+const reportOutput = document.getElementById('reportOutput');
+const figAppendix = document.getElementById('figAppendix');
+
+const backendUrlInput = document.getElementById('backendUrl');
+const providerRadios = document.querySelectorAll('input[name=provider]');
+const groqFields = document.getElementById('groqFields');
+const customFields = document.getElementById('customFields');
+
+// ---------- Chat sidebar elements ----------
+const chatFab = document.getElementById('chatFab');
+const chatOverlay = document.getElementById('chatOverlay');
+const chatSidebar = document.getElementById('chatSidebar');
+const chatClose = document.getElementById('chatClose');
+const chatLog = document.getElementById('chatLog');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+const chatSub = document.getElementById('chatSub');
+const chatEmptyHintHTML = document.getElementById('chatEmptyHint') ? document.getElementById('chatEmptyHint').outerHTML : '';
+
+let currentSessionId = null;
+let chatHistory = []; // [{role, content}, ...]
+
+let activeMode = 'file';
+let selectedFile = null;
+
+// ---------- Persisted settings ----------
+const SETTINGS_KEY = 'marginal_settings_v1';
+function loadSettings(){
+  const configuredBackendUrl = backendUrlInput.value;
+  try{
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    if(s.backendUrl && configuredBackendUrl === 'http://localhost:8000') backendUrlInput.value = s.backendUrl;
+    if(s.provider) document.querySelector(`input[name=provider][value="${s.provider}"]`).checked = true;
+    if(s.groqKey) document.getElementById('groqKey').value = s.groqKey;
+    if(s.groqTextModel) document.getElementById('groqTextModel').value = s.groqTextModel;
+    if(s.groqVisionModel) document.getElementById('groqVisionModel').value = s.groqVisionModel;
+    if(s.customBaseUrl) document.getElementById('customBaseUrl').value = s.customBaseUrl;
+    if(s.customApiKey) document.getElementById('customApiKey').value = s.customApiKey;
+    if(s.customTextModel) document.getElementById('customTextModel').value = s.customTextModel;
+    if(s.customVisionModel) document.getElementById('customVisionModel').value = s.customVisionModel;
+  }catch(e){}
+  toggleProviderFields();
+}
+function saveSettings(){
+  const s = {
+    backendUrl: backendUrlInput.value,
+    provider: document.querySelector('input[name=provider]:checked').value,
+    groqKey: document.getElementById('groqKey').value,
+    groqTextModel: document.getElementById('groqTextModel').value,
+    groqVisionModel: document.getElementById('groqVisionModel').value,
+    customBaseUrl: document.getElementById('customBaseUrl').value,
+    customApiKey: document.getElementById('customApiKey').value,
+    customTextModel: document.getElementById('customTextModel').value,
+    customVisionModel: document.getElementById('customVisionModel').value,
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+}
+document.querySelectorAll('.panel input').forEach(el => el.addEventListener('change', saveSettings));
+
+function toggleProviderFields(){
+  const provider = document.querySelector('input[name=provider]:checked').value;
+  groqFields.style.display = provider === 'groq' ? 'block' : 'none';
+  customFields.style.display = provider === 'custom' ? 'block' : 'none';
+}
+providerRadios.forEach(r => r.addEventListener('change', toggleProviderFields));
+
+// ---------- Tabs ----------
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    activeMode = tab.dataset.tab;
+    tabFile.style.display = activeMode === 'file' ? 'block' : 'none';
+    tabUrl.style.display = activeMode === 'url' ? 'block' : 'none';
+  });
+});
+
+// ---------- File upload ----------
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) setFile(fileInput.files[0]); });
+fileChipRemove.addEventListener('click', (e) => { e.stopPropagation(); selectedFile = null; fileChip.style.display = 'none'; dropzone.style.display = 'block'; });
+
+function setFile(f){
+  if (f.type !== 'application/pdf'){ showError('Please select a PDF file.'); return; }
+  selectedFile = f;
+  fileChipName.textContent = f.name;
+  fileChip.style.display = 'flex';
+  dropzone.style.display = 'none';
+}
+
+// ---------- Backend health ----------
+async function checkHealth(){
+  try{
+    const res = await fetch(backendUrlInput.value.replace(/\/$/, '') + '/api/health');
+    if(res.ok){ statusPill.textContent = 'backend: connected'; statusPill.style.color = '#4C7A5B'; }
+    else throw new Error();
+  }catch(e){
+    statusPill.textContent = 'backend: unreachable';
+    statusPill.style.color = '#B34A3C';
+  }
+}
+checkHealth();
+backendUrlInput.addEventListener('change', () => { saveSettings(); checkHealth(); });
+
+// ---------- Error ----------
+function showError(msg){
+  errorBox.textContent = msg;
+  errorBox.style.display = 'block';
+}
+function clearError(){ errorBox.style.display = 'none'; }
+
+// ---------- Live streaming sections (real agent output, not a fake spinner) ----------
+const SECTION_TITLES = {
+  A: '1–3 · Executive Summary / Technical / Layman',
+  B: '4–6 · Innovation / Author\'s Thinking / Math',
+  C: '7–9 · Results / Strengths & Limitations / Applications',
+  takeaways: '12 · Key Takeaways',
+  related: '10 · Related Work & Novelty Check',
+  ideas: '11 · Research Paper Ideas',
+};
+const SECTION_ORDER = ['A', 'B', 'C', 'related', 'ideas', 'takeaways'];
+let liveSectionEls = {};
+
+function initLiveSections(){
+  liveSections.innerHTML = '';
+  liveSectionEls = {};
+  SECTION_ORDER.forEach(key => {
+    const card = document.createElement('div');
+    card.className = 'live-section';
+    card.innerHTML = `
+      <div class="live-section-head"><span>${SECTION_TITLES[key]}</span><span class="dot"></span></div>
+      <div class="live-section-body"></div>`;
+    liveSections.appendChild(card);
+    liveSectionEls[key] = { card, body: card.querySelector('.live-section-body') };
+  });
+}
+
+function handleAnalyzeEvent(evt){
+  switch(evt.type){
+    case 'status':
+      liveStatus.textContent = evt.message;
+      break;
+    case 'section_start': {
+      const el = liveSectionEls[evt.key];
+      if (el) el.card.classList.add('active');
+      break;
+    }
+    case 'section_delta': {
+      const el = liveSectionEls[evt.key];
+      if (el){
+        el.body.textContent += evt.delta;
+        el.body.scrollTop = el.body.scrollHeight;
+      }
+      break;
+    }
+    case 'section_done': {
+      const el = liveSectionEls[evt.key];
+      if (el){ el.card.classList.remove('active'); el.card.classList.add('done'); }
+      break;
+    }
+    case 'research_done':
+      liveStatus.textContent = `Research done — ${evt.queries.length} quer${evt.queries.length===1?'y':'ies'}, ${evt.related_papers_found} related paper(s) found${evt.used_mcp ? ' (via MCP)' : ''}.`;
+      break;
+    case 'final':
+      renderResult(evt);
+      break;
+    case 'error':
+      throw new Error(evt.message);
+  }
+}
+
+// ---------- Math protection (Markdown mangles $...$/$$...$$ via underscores/braces) ----------
+function protectMath(src){
+  const store = [];
+  const stash = (s) => { store.push(s); return `\u0000MATH${store.length - 1}\u0000`; };
+  // block math $$...$$ first, then inline $...$ (skip escaped \$ and empty pairs)
+  let out = src.replace(/\$\$([\s\S]+?)\$\$/g, (m) => stash(m));
+  out = out.replace(/(^|[^\\$])\$([^\n$]+?)\$(?!\$)/g, (m, pre, inner) => pre + stash(`$${inner}$`));
+  return { text: out, store };
+}
+function restoreMath(html, store){
+  return html.replace(/\u0000MATH(\d+)\u0000/g, (m, i) => store[Number(i)] ?? '');
+}
+function renderMathIn(el){
+  if (window.renderMathInElement){
+    try{
+      window.renderMathInElement(el, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+        ],
+        throwOnError: false,
+      });
+    }catch(e){}
+  }
+}
+
+// ---------- Render ----------
+function renderResult(data){
+  metaStrip.innerHTML = '';
+  const m = data.meta;
+  const chips = [
+    `pages: ${m.pages}`,
+    `figures: ${m.figures_found}`,
+    `model: ${m.text_model}`,
+    m.truncated ? 'text truncated (long paper)' : 'full text used',
+    `research queries: ${(m.research_queries||[]).length}`,
+    `related papers found: ${m.related_papers_found}`,
+  ];
+  if (m.used_mcp) chips.push('research via MCP');
+  chips.forEach(c => {
+    const span = document.createElement('span');
+    span.textContent = c;
+    metaStrip.appendChild(span);
+  });
+
+  const { text: protectedMd, store: mathStore } = protectMath(data.report_markdown || '');
+  let html = marked.parse(protectedMd);
+  html = restoreMath(html, mathStore);
+  html = DOMPurify.sanitize(html, { ADD_TAGS: ['img'], ADD_ATTR: ['src', 'alt'] });
+
+  // add numbered badges to "## N. Heading", and highlight the agentic sections
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = html;
+  wrapper.querySelectorAll('h2').forEach(h => {
+    const match = h.textContent.match(/^(\d+)\.\s*(.*)$/);
+    if (match){
+      h.innerHTML = `<span class="sec-num">${match[1]}</span> ${match[2]}`;
+      if (/research paper ideas/i.test(match[2])) h.classList.add('hl-ideas');
+      else if (/related work/i.test(match[2])) h.classList.add('hl-related');
+      else if (/sources consulted/i.test(match[2])) h.classList.add('hl-sources');
+    }
+  });
+
+  // render any ```mermaid fenced blocks as actual diagrams
+  wrapper.querySelectorAll('pre > code.language-mermaid').forEach((codeEl, i) => {
+    const pre = codeEl.parentElement;
+    const src = codeEl.textContent;
+    const container = document.createElement('div');
+    container.className = 'mermaid-wrap';
+    const id = `mmd-${Date.now()}-${i}`;
+    container.innerHTML = `<div id="${id}">${src}</div>`;
+    pre.replaceWith(container);
+    if (window.__mermaid){
+      window.__mermaid.render(`${id}-svg`, src).then(({svg}) => {
+        document.getElementById(id).innerHTML = svg;
+      }).catch(() => {
+        document.getElementById(id).outerHTML = `<pre style="text-align:left;white-space:pre-wrap;">${src.replace(/</g,'&lt;')}</pre>`;
+      });
+    }
+  });
+
+  reportOutput.innerHTML = '';
+  reportOutput.appendChild(wrapper);
+  renderMathIn(reportOutput);
+
+  // wire up the RAG chat sidebar to this paper
+  currentSessionId = data.session_id || null;
+  chatFab.disabled = !currentSessionId;
+  chatFab.title = currentSessionId ? 'Ask questions about this paper' : 'Analyze a paper first';
+  chatSub.textContent = currentSessionId ? (m.source || 'paper loaded') : 'no paper loaded';
+  chatHistory = [];
+  chatLog.innerHTML = chatEmptyHintHTML;
+
+  figAppendix.innerHTML = '';
+  if (data.figures && data.figures.length){
+    const h3 = document.createElement('h3');
+    h3.textContent = `All extracted figures (${data.figures.length})`;
+    figAppendix.appendChild(h3);
+    const grid = document.createElement('div');
+    grid.className = 'fig-grid';
+    data.figures.forEach(f => {
+      const card = document.createElement('div');
+      card.className = 'fig-card';
+      card.innerHTML = `
+        <img src="data:${f.mime};base64,${f.data_base64}" alt="Figure ${f.index}" />
+        <div class="fig-body">
+          <div class="fig-label">Figure ${f.index} · page ${f.page}</div>
+          <div class="fig-desc">${(f.description || '').replace(/</g,'&lt;')}</div>
+        </div>`;
+      grid.appendChild(card);
+    });
+    figAppendix.appendChild(grid);
+  }
+
+  emptyState.style.display = 'none';
+  loadingState.style.display = 'none';
+  resultState.style.display = 'block';
+}
+
+// ---------- Submit ----------
+analyzeBtn.addEventListener('click', async () => {
+  clearError();
+
+  if (activeMode === 'file' && !selectedFile){ showError('Please choose a PDF file.'); return; }
+  if (activeMode === 'url' && !urlInput.value.trim()){ showError('Please paste a paper URL.'); return; }
+
+  const provider = document.querySelector('input[name=provider]:checked').value;
+  if (provider === 'custom' && (!document.getElementById('customBaseUrl').value.trim() || !document.getElementById('customTextModel').value.trim())){
+    showError('Enter your hosted model\'s base URL and text model name.');
+    return;
+  }
+
+  const fd = new FormData();
+  if (activeMode === 'file') fd.append('file', selectedFile);
+  else fd.append('url', urlInput.value.trim());
+  fd.append('provider', provider);
+  fd.append('extract_images', document.getElementById('extractImages').checked);
+  fd.append('groq_api_key', document.getElementById('groqKey').value.trim());
+  fd.append('groq_text_model', document.getElementById('groqTextModel').value.trim());
+  fd.append('groq_vision_model', document.getElementById('groqVisionModel').value.trim());
+  fd.append('custom_base_url', document.getElementById('customBaseUrl').value.trim());
+  fd.append('custom_api_key', document.getElementById('customApiKey').value.trim());
+  fd.append('custom_text_model', document.getElementById('customTextModel').value.trim());
+  fd.append('custom_vision_model', document.getElementById('customVisionModel').value.trim());
+
+  emptyState.style.display = 'none';
+  resultState.style.display = 'none';
+  loadingState.style.display = 'block';
+  liveStatus.textContent = 'Extracting text & figures…';
+  initLiveSections();
+  analyzeBtn.disabled = true;
+  chatFab.disabled = true;
+  closeChat();
+
+  try{
+    const res = await fetch(backendUrlInput.value.replace(/\/$/, '') + '/api/analyze', {
+      method: 'POST',
+      body: fd,
+    });
+    if (!res.ok || !res.body){
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || `Analysis failed (${res.status}).`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true){
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      let sep;
+      while ((sep = buffer.indexOf('\n\n')) !== -1){
+        const frame = buffer.slice(0, sep);
+        buffer = buffer.slice(sep + 2);
+        const line = frame.split('\n').find(l => l.startsWith('data:'));
+        if (!line) continue;
+        const raw = line.slice(5).trim();
+        if (raw === '[DONE]') continue;
+        let evt;
+        try{ evt = JSON.parse(raw); }catch(e){ continue; }
+        handleAnalyzeEvent(evt);
+      }
+    }
+  }catch(e){
+    loadingState.style.display = 'none';
+    emptyState.style.display = 'block';
+    showError(e.message || String(e));
+  }finally{
+    analyzeBtn.disabled = false;
+  }
+});
+
+// ---------- Chat sidebar logic (RAG Q&A over the analyzed paper) ----------
+function openChat(){
+  if (!currentSessionId) return;
+  chatSidebar.classList.add('open');
+  chatOverlay.classList.add('open');
+  chatInput.focus();
+}
+function closeChat(){
+  chatSidebar.classList.remove('open');
+  chatOverlay.classList.remove('open');
+}
+chatFab.addEventListener('click', openChat);
+chatClose.addEventListener('click', closeChat);
+chatOverlay.addEventListener('click', closeChat);
+
+function appendChatMsg(role, content, pending){
+  const hint = document.getElementById('chatEmptyHint');
+  if (hint) hint.remove();
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}` + (pending ? ' pending' : '');
+  if (role === 'assistant' && !pending){
+    const { text: protectedMd, store: mathStore } = protectMath(content || '');
+    let html = marked.parse(protectedMd);
+    html = restoreMath(html, mathStore);
+    html = DOMPurify.sanitize(html);
+    div.innerHTML = html;
+    renderMathIn(div);
+  } else {
+    div.textContent = content;
+  }
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  return div;
+}
+
+function finalizeStreamedMsg(div, rawText){
+  div.classList.remove('streaming');
+  const { text: protectedMd, store: mathStore } = protectMath(rawText || '');
+  let html = marked.parse(protectedMd);
+  html = restoreMath(html, mathStore);
+  html = DOMPurify.sanitize(html);
+  div.innerHTML = html;
+  renderMathIn(div);
+}
+
+async function sendChatMessage(){
+  const question = chatInput.value.trim();
+  if (!question || !currentSessionId) return;
+
+  const provider = document.querySelector('input[name=provider]:checked').value;
+  appendChatMsg('user', question);
+  chatHistory.push({ role: 'user', content: question });
+  chatInput.value = '';
+  chatSend.disabled = true;
+
+  // live-updating bubble: raw text while streaming, rendered Markdown/KaTeX once done
+  const streamEl = document.createElement('div');
+  streamEl.className = 'chat-msg assistant streaming';
+  streamEl.textContent = '▍';
+  const hint = document.getElementById('chatEmptyHint');
+  if (hint) hint.remove();
+  chatLog.appendChild(streamEl);
+  chatLog.scrollTop = chatLog.scrollHeight;
+
+  const payload = {
+    session_id: currentSessionId,
+    question,
+    history: chatHistory.slice(0, -1), // prior turns, current question sent separately
+    provider,
+    groq_api_key: document.getElementById('groqKey').value.trim(),
+    groq_text_model: document.getElementById('groqTextModel').value.trim(),
+    custom_base_url: document.getElementById('customBaseUrl').value.trim(),
+    custom_api_key: document.getElementById('customApiKey').value.trim(),
+    custom_text_model: document.getElementById('customTextModel').value.trim(),
+  };
+
+  let full = '';
+  try{
+    const res = await fetch(backendUrlInput.value.replace(/\/$/, '') + '/api/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok || !res.body){
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || `Chat request failed (${res.status}).`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let streamError = null;
+
+    while (true){
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE frames are separated by a blank line; parse each complete one
+      let sep;
+      while ((sep = buffer.indexOf('\n\n')) !== -1){
+        const frame = buffer.slice(0, sep);
+        buffer = buffer.slice(sep + 2);
+        const line = frame.split('\n').find(l => l.startsWith('data:'));
+        if (!line) continue;
+        const raw = line.slice(5).trim();
+        if (raw === '[DONE]') continue;
+        try{
+          const evt = JSON.parse(raw);
+          if (evt.error){ streamError = evt.error; continue; }
+          if (evt.delta){
+            full += evt.delta;
+            streamEl.textContent = full + '▍';
+            chatLog.scrollTop = chatLog.scrollHeight;
+          }
+        }catch(e){ /* ignore malformed frame */ }
+      }
+    }
+
+    if (streamError && !full) throw new Error(streamError);
+    finalizeStreamedMsg(streamEl, full);
+    if (streamError) appendChatMsg('assistant', `⚠️ Stream ended early: ${streamError}`);
+    chatHistory.push({ role: 'assistant', content: full });
+  }catch(e){
+    streamEl.remove();
+    appendChatMsg('assistant', `⚠️ ${e.message || e}`);
+  }finally{
+    chatSend.disabled = false;
+  }
+}
+chatSend.addEventListener('click', sendChatMessage);
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    sendChatMessage();
+  }
+});
+
+loadSettings();
+</script>
+</body>
+</html>
